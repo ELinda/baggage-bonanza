@@ -34,20 +34,34 @@ public class MainActivity extends AppCompatActivity {
         public MoveActivatedTextView(TextView activated){
             this.activated = activated;
         }
-        public void run(){
+        public void run() {
+            float maxDistance = BUTTON_HEIGHT/2 + BUTTON_MARGIN;
+            float lowestQuestionY = visibleQ.get(visibleQ.size()-1).getY();
             activated.setBackgroundColor(ACTIVATED_A_COLOR);
-            activated.setX(activated.getX() + 5 * SCROLL_LEFT_BUTTON_RATE);
-            if (activated.getX() < BUTTON_WIDTH){
+            // If the activated answer is too low in the screen to match with anything,
+            // keep shifting it upwards until it's as high as the lowest box on the right.
+            // Thereafter, proceed as normal.
+            if (activated.getY() > lowestQuestionY + maxDistance) {
+                activated.setY(activated.getY() - 2 * SCROLL_LEFT_BUTTON_RATE);
                 mHandler.postDelayed(this, SCROLL_LEFT_BUTTON_TASK_INTERVAL);
+                return;
             }else{
+                activated.setX(activated.getX() + 5 * SCROLL_LEFT_BUTTON_RATE);
+            }
+            // If at very top of the screen, then go to the very bottom
+            if (activated.getY() < -0.5 * BUTTON_HEIGHT) {
+                activated.setY(getScreenDims().y - BUTTON_HEIGHT);
+            }
+
+            // Keep going, or stop, if far enough to the right
+            if (activated.getX() < BUTTON_WIDTH) {
+                mHandler.postDelayed(this, SCROLL_LEFT_BUTTON_TASK_INTERVAL);
+            } else {
                 visibleA.remove(activated);
-                float maxDistance = BUTTON_HEIGHT/2 + BUTTON_MARGIN;
                 for (TextView q : visibleQ){
-                    float y_1 = activated.getY();
-                    float y_2 = q.getY();
                     System.out.println(String.format("candidate %s with %s",
                             activated.getText(), q.getText()));
-                    if (y_1 > y_2 - maxDistance && y_1 < y_2 + maxDistance){
+                    if (is_closest_choice(activated, q, maxDistance)){
                         System.out.println(String.format("And matched %s with %s",
                                            activated.getText(), q.getText()));
                         if (AQ.get(activated.getText()).equals(q.getText())){
@@ -55,10 +69,15 @@ public class MainActivity extends AppCompatActivity {
                         }else{
                             q.setBackgroundColor(WRONG_MATCH_COLOR);
                         }
-                        break;
+                        return;
                     }
                 }
             }
+        }
+        public boolean is_closest_choice(View v1, View v2, float maxDistance){
+            float y_1 = v1.getY();
+            float y_2 = v2.getY();
+            return y_1 >= y_2 - maxDistance && y_1 <= y_2 + maxDistance;
         }
     }
     Runnable addRightButtonTask = new Runnable() {
@@ -99,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
             if (xy[1] < -1 * BUTTON_HEIGHT) {
                 float offsetBelow = BUTTON_HEIGHT + 2 * BUTTON_MARGIN;
                 float lowestY = visibleA.get(visibleA.size() - 1).getY();
-                highestA.setY(lowestY + offsetBelow);
+                highestA.setY(Math.max(lowestY + offsetBelow, getScreenDims().y - offsetBelow));
                 visibleA.remove(0);
                 visibleA.add(highestA);
             }else {
@@ -123,10 +142,6 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         mHandler = new Handler(Looper.getMainLooper());
-    }
-    @Override
-    protected void onStart() {
-        super.onStart();
         if (isExternalStorageWritable()) {
 
         }
@@ -144,6 +159,10 @@ public class MainActivity extends AppCompatActivity {
         mHandler.postDelayed(addRightButtonTask, ADD_RIGHT_BUTTON_TASK_INTERVAL);
         mHandler.postDelayed(scrollLeftButtonTask, SCROLL_LEFT_BUTTON_TASK_INTERVAL);
         mHandler.postDelayed(flattenAllAs, 100);
+    }
+    @Override
+    protected void onStart() {
+        super.onStart();
     }
     @Override
     public void onStop() {
