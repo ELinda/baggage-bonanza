@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     public static final int ACTIVATED_A_COLOR = Color.parseColor("#4499CC");
@@ -28,7 +29,30 @@ public class MainActivity extends AppCompatActivity {
     public static final int RIGHT_MATCH_COLOR = Color.parseColor("#00AA44");
     public static final int WRONG_MATCH_COLOR = Color.parseColor("#AA4400");
     public static final int TEXT_COLOR = Color.parseColor("#FFFFFF");
+    private static final int BUTTON_MARGIN = 10;
+    private static final int ADD_RIGHT_BUTTON_TASK_INTERVAL = 6000;
+    private static final int SCROLL_LEFT_BUTTON_TASK_INTERVAL = 125;
+    private static final int SCROLL_LEFT_BUTTON_RATE = 8;
+    private StopWatch watch = null;
+    private HashMap<String, String> AQ = new HashMap<String, String>();
+    private ArrayList<String> Q = new ArrayList<String>();
+    private ArrayList<String> A = new ArrayList<String>();
+    private int maxId = 10;
+    private static final int BUTTON_HEIGHT = 150;
+    private int BUTTON_WIDTH;
+    private HashMap<TextView, TextView> QsTakenByA = new HashMap<>();
+    ArrayList<TextView> visibleQ = new ArrayList<>();
+    ArrayList<TextView> visibleA = new ArrayList<>();
+    ArrayList<String> visibleAUnused = new ArrayList<String>();
+    private int maxQs = 0;
     private Handler mHandler;
+    private void clearState(){
+        QsTakenByA.clear();
+        visibleA.clear();
+        visibleQ.clear();
+        visibleAUnused.clear();
+        watch.reset();
+    }
     public class MoveActivatedTextView implements Runnable {
         TextView activated;
         public MoveActivatedTextView(TextView activated){
@@ -57,24 +81,64 @@ public class MainActivity extends AppCompatActivity {
             if (activated.getX() < BUTTON_WIDTH) {
                 mHandler.postDelayed(this, SCROLL_LEFT_BUTTON_TASK_INTERVAL);
             } else {
-                visibleA.remove(activated);
-                for (TextView q : visibleQ){
-                    System.out.println(String.format("candidate %s with %s",
-                            activated.getText(), q.getText()));
-                    if (is_closest_choice(activated, q, maxDistance)){
-                        System.out.println(String.format("And matched %s with %s",
-                                           activated.getText(), q.getText()));
-                        if (AQ.get(activated.getText()).equals(q.getText())){
-                            q.setBackgroundColor(RIGHT_MATCH_COLOR);
-                        }else{
-                            q.setBackgroundColor(WRONG_MATCH_COLOR);
-                        }
-                        return;
+                matchQAndA(activated, maxDistance);
+            }
+        }
+        public void matchQAndA(TextView candidateA, float maxDistance){
+            visibleA.remove(activated);
+            for (TextView q : visibleQ){
+                if (isClosestChoice(activated, q, maxDistance)){
+                    /*System.out.println(String.format("Matched %s with %s",
+                            activated.getText(), q.getText()));*/
+                    // if the Q is already matched with an A, return old A to the left column
+                    if (QsTakenByA.containsKey(q)){
+                        visibleA.add(QsTakenByA.get(q));
+                        placeAReturningInBelt(QsTakenByA.get(q));
                     }
+                    QsTakenByA.put(q, activated);
+                    if (AQ.get(activated.getText()).equals(q.getText())){
+                        q.setBackgroundColor(RIGHT_MATCH_COLOR);
+                    }else{
+                        q.setBackgroundColor(WRONG_MATCH_COLOR);
+                    }
+                    break;
+                }
+            }
+            // if all answers are taken but some are wrongly assigned, reset all the wrong ones
+            // otherwise, win
+            if (visibleA.size() == 0){
+                winOrResetAllWrongAnswers();
+            }
+        }
+        public void winOrResetAllWrongAnswers(){
+            // questions wrongly answered
+            ArrayList<TextView> wrongQs = new ArrayList<>();
+            for(Map.Entry<TextView, TextView> qa : QsTakenByA.entrySet()){
+                TextView q = qa.getKey();
+                TextView a = qa.getValue();
+                //System.out.println(String.format("Q->A is %s, %s", q.getText(), a.getText()));
+                if (!AQ.get(a.getText()).equals(q.getText())){
+                    visibleA.add(a);
+                    placeAReturningInBelt(a);
+                    wrongQs.add(q);
+                }
+            }
+            // if no questions wrongly answered, you have won! Otherwise, finish the reset
+            if (wrongQs.size() == 0){
+                TextView hello = (TextView) findViewById(R.id.hello);
+                hello.setWidth(getScreenDims().x/3);
+                hello.setTextSize(20);
+                hello.setTextColor(WAITING_Q_COLOR);
+                watch.stop();
+                hello.setText(String.format("You have won in %s seconds!!!111",
+                                            watch.getTimeElapsedSeconds()));
+            }else{
+                for (TextView q : wrongQs){
+                    QsTakenByA.remove(q);
                 }
             }
         }
-        public boolean is_closest_choice(View v1, View v2, float maxDistance){
+        public boolean isClosestChoice(View v1, View v2, float maxDistance){
             float y_1 = v1.getY();
             float y_2 = v2.getY();
             return y_1 >= y_2 - maxDistance && y_1 <= y_2 + maxDistance;
@@ -83,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
     Runnable addRightButtonTask = new Runnable() {
         @Override
         public void run() {
-            if (visibleQ.size() >= estimateNumberOfSpots())
+            if (visibleQ.size() >= estimateNumberOfSpots() || visibleA.size() == 0)
                 return;
             TextView textView = (TextView)findViewById(R.id.hello);
             RelativeLayout layout = (RelativeLayout) findViewById(R.id.main);
@@ -108,6 +172,8 @@ public class MainActivity extends AppCompatActivity {
     Runnable scrollLeftButtonTask = new Runnable() {
         @Override
         public void run() {
+            if (visibleA.size() == 0)
+                return;
             TextView textView = (TextView)findViewById(R.id.hello);
             RelativeLayout layout = (RelativeLayout) findViewById(R.id.main);
 
@@ -116,9 +182,7 @@ public class MainActivity extends AppCompatActivity {
             int[] xy = new int[2];
             highestA.getLocationOnScreen(xy);
             if (xy[1] < -1 * BUTTON_HEIGHT) {
-                float offsetBelow = BUTTON_HEIGHT + 2 * BUTTON_MARGIN;
-                float lowestY = visibleA.get(visibleA.size() - 1).getY();
-                highestA.setY(Math.max(lowestY + offsetBelow, getScreenDims().y - offsetBelow));
+                placeAReturningInBelt(highestA);
                 visibleA.remove(0);
                 visibleA.add(highestA);
             }else {
@@ -129,6 +193,13 @@ public class MainActivity extends AppCompatActivity {
             mHandler.postDelayed(this, SCROLL_LEFT_BUTTON_TASK_INTERVAL);
         }
     };
+    private void placeAReturningInBelt(TextView a){
+        float offsetBelow = BUTTON_HEIGHT + 2 * BUTTON_MARGIN;
+        float lowestY = visibleA.get(visibleA.size() - 1).getY();
+        a.setY(Math.max(lowestY + offsetBelow, getScreenDims().y - offsetBelow));
+        a.setX(0);
+        a.setBackgroundColor(CANDIDATE_A_COLOR);
+    }
     private boolean hasNoSpaceForNextQ(){
         if (visibleQ == null || visibleQ.size() == 0) return false;
         int[] xy = new int[2];
@@ -139,9 +210,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
         mHandler = new Handler(Looper.getMainLooper());
+        start();
+    }
+    private void restart(){
+        clearState();
+        start();
+    }
+    private void start(){
         if (isExternalStorageWritable()) {
 
         }
@@ -159,6 +236,8 @@ public class MainActivity extends AppCompatActivity {
         mHandler.postDelayed(addRightButtonTask, ADD_RIGHT_BUTTON_TASK_INTERVAL);
         mHandler.postDelayed(scrollLeftButtonTask, SCROLL_LEFT_BUTTON_TASK_INTERVAL);
         mHandler.postDelayed(flattenAllAs, 100);
+        watch = new StopWatch((TextView)findViewById(R.id.timer));
+        watch.start();
     }
     @Override
     protected void onStart() {
@@ -173,22 +252,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
     }
-    private HashMap<String, String> QA = new HashMap<String, String>();
-    private HashMap<String, String> AQ = new HashMap<String, String>();
-    private ArrayList<String> Q = new ArrayList<String>();
-    private ArrayList<String> A = new ArrayList<String>();
-    private int maxId = 10;
-    private static final int BUTTON_HEIGHT = 150;
-    private int BUTTON_WIDTH;
-    private static final int BUTTON_MARGIN = 10;
-    private static final int ADD_RIGHT_BUTTON_TASK_INTERVAL = 6000;
-    private static final int SCROLL_LEFT_BUTTON_TASK_INTERVAL = 125;
-    private static final int SCROLL_LEFT_BUTTON_RATE = 8;
-    private HashMap<TextView, TextView> QsTakenByA = new HashMap<>();
-    ArrayList<TextView> visibleQ = new ArrayList<>();
-    ArrayList<TextView> visibleA = new ArrayList<>();
-    ArrayList<String> visibleAUnused = new ArrayList<String>();
-    private int maxQs = 0;
 
     public void addA(TextView answerView){
         visibleA.add(answerView);
@@ -223,7 +286,6 @@ public class MainActivity extends AppCompatActivity {
             for(String line; (line = br.readLine()) != null; ){
                 String[] qa = line.split(" ", 2);
                 if (qa.length > 1) {
-                    this.QA.put(qa[0], qa[1]);
                     this.AQ.put(qa[1], qa[0]);
                     Q.add(qa[0]);
                     A.add(qa[1]);
