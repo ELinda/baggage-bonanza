@@ -12,6 +12,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -197,6 +198,9 @@ public class MainActivity extends AppCompatActivity {
         float offsetBelow = BUTTON_HEIGHT + 2 * BUTTON_MARGIN;
         float lowestY = visibleA.get(visibleA.size() - 1).getY();
         a.setY(Math.max(lowestY + offsetBelow, getScreenDims().y - offsetBelow));
+        System.out.println(String.format("%f lowest", Math.max(lowestY + offsetBelow, getScreenDims().y - offsetBelow)));
+        System.out.println(String.format("%f lowestbef", lowestY));
+
         a.setX(0);
         a.setBackgroundColor(CANDIDATE_A_COLOR);
     }
@@ -215,8 +219,19 @@ public class MainActivity extends AppCompatActivity {
         start();
     }
     private void restart(){
+        System.out.println("restarting");
         clearState();
         start();
+    }
+
+    private void setupBottomButtons(){
+        Button restartButton = (Button)findViewById(R.id.restart);
+        System.out.println(String.format("Rbutton %s", restartButton.getText()));
+        restartButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                restart();
+            }
+        });
     }
     private void start(){
         if (isExternalStorageWritable()) {
@@ -233,11 +248,13 @@ public class MainActivity extends AppCompatActivity {
         this.maxQs = estimateNumberOfSpots();
         fillAnswers((RelativeLayout) findViewById(R.id.main));
 
-        mHandler.postDelayed(addRightButtonTask, ADD_RIGHT_BUTTON_TASK_INTERVAL);
+        // add the first right button pretty soon, but have others add gradually
+        mHandler.postDelayed(addRightButtonTask, 50);
         mHandler.postDelayed(scrollLeftButtonTask, SCROLL_LEFT_BUTTON_TASK_INTERVAL);
         mHandler.postDelayed(flattenAllAs, 100);
         watch = new StopWatch((TextView)findViewById(R.id.timer));
         watch.start();
+        setupBottomButtons();
     }
     @Override
     protected void onStart() {
