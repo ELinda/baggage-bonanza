@@ -16,7 +16,7 @@
 сегодня today
 нельзя must not
 совершенно absolutely
-голос vox; voice
+голос voice
 деньги money
 дальше farther
 каждый everyone
@@ -28,7 +28,7 @@
 первый first
 среди among
 вопрос question
-слишком too
+слишком exceedingly
 против versus
 действительно really
 зачем what for
