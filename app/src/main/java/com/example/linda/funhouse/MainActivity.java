@@ -1,5 +1,6 @@
 package com.example.linda.funhouse;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Bundle;
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int ADD_RIGHT_BUTTON_TASK_INTERVAL = 6000;
     private static final int SCROLL_LEFT_BUTTON_TASK_INTERVAL = 125;
     private static final int SCROLL_LEFT_BUTTON_RATE = 8;
+    Intent fileIntent = null;
     private StopWatch watch = null;
     private HashMap<String, String> AQ = new HashMap<String, String>();
     private ArrayList<String> Q = new ArrayList<String>();
@@ -54,13 +56,10 @@ public class MainActivity extends AppCompatActivity {
     }
     private void clearState(){
         RelativeLayout layout = (RelativeLayout) findViewById(R.id.main);
-        System.out.println(String.format("%s children found", layout.getChildCount()));
         for (int i = 0; i < layout.getChildCount(); ++ i){
-            System.out.println(String.format("child at %s, %s", i, layout.getChildAt(i)));
         }
         System.out.println(upwardsMovingAs.size() + rightSideQs.size());
         layout.removeViews(1, upwardsMovingAs.size() + rightSideQs.size());
-        System.out.println(String.format("%s children found afterwards", layout.getChildCount()));
         QsTakenByA.clear();
         upwardsMovingAs.clear();
         AStates.clear();
@@ -214,7 +213,8 @@ public class MainActivity extends AppCompatActivity {
     private void multiPlaceAReturningInBelt(List<TextView> aList){
         upwardsMovingAs.addAll(aList);
         float offsetBelow = BUTTON_HEIGHT + 2 * BUTTON_MARGIN;
-        float lowestY = upwardsMovingAs.get(upwardsMovingAs.size() - 1).getY();
+        float lowestY = upwardsMovingAs.size() > 0 ?
+                            upwardsMovingAs.get(upwardsMovingAs.size() - 1).getY() : 0;
         float firstOffset = Math.max(lowestY + offsetBelow, getScreenDims().y - offsetBelow);
         for(int i=0; i < aList.size(); ++i){
             aList.get(i).setY(firstOffset + i * offsetBelow);
@@ -259,6 +259,14 @@ public class MainActivity extends AppCompatActivity {
                 restart();
             }
         });
+        Button chooseButton = (Button)findViewById(R.id.choose);
+        chooseButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                int FILE_CHOOSER = 100;
+                startActivityForResult(fileIntent, FILE_CHOOSER);
+            }
+        });
+
     }
     private void start(){
         if (isExternalStorageWritable()) {
@@ -282,6 +290,17 @@ public class MainActivity extends AppCompatActivity {
         watch = new StopWatch((TextView)findViewById(R.id.timer));
         watch.start();
         setupBottomButtons();
+
+        if (fileIntent == null) {
+            fileIntent = new Intent(FileBrowserActivity.INTENT_ACTION_SELECT_FILE,
+                                    null,
+                                    this,
+                                    FileBrowserActivity.class);
+            ArrayList<String> extensions = new ArrayList<String>();
+            extensions.add(".pdf");
+            extensions.add(".txt");
+            fileIntent.putStringArrayListExtra("filterFileExtension", extensions);
+        }
     }
     @Override
     protected void onStart() {
