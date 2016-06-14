@@ -23,6 +23,7 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -155,7 +156,7 @@ public class FileBrowserActivity extends Activity {
 				adapter.notifyDataSetChanged();
 				updateCurrentDirectoryTextView();
 			}
-		});// upDirButton.setOnClickListener(
+		});
 
 		Button selectFolderButton = (Button) this
 				.findViewById(R.id.selectCurrentDirectoryButton);
@@ -166,10 +167,20 @@ public class FileBrowserActivity extends Activity {
 					returnDirectoryFinishActivity();
 				}
 			});
-		} else {// if(currentAction == this.SELECT_DIRECTORY) {
+		} else {
 			selectFolderButton.setVisibility(View.GONE);
-		}// } else {//if(currentAction == this.SELECT_DIRECTORY) {
-	}// private void initializeButtons() {
+		}
+
+        Button assetsButton = (Button) this.findViewById(R.id.assetsButton);
+        assetsButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                Log.d(LOGTAG, "onclick for assetsButton");
+                loadAssetList();
+                adapter.notifyDataSetChanged();
+                updateCurrentDirectoryTextView();
+            }
+        });
+	}
 
 	private void loadDirectoryUp() {
 		// present directory removed from list
@@ -268,6 +279,28 @@ public class FileBrowserActivity extends Activity {
 		this.finish();
 	}// END private void returnDirectoryFinishActivity() {
 
+	private void loadAssetList() {
+        fileList.clear();
+        String prefix = "assets/";
+
+		String assetList[] = null;
+		try {
+            assetList = getAssets().list("");
+		} catch (IOException e){
+			Log.d(LOGTAG, "error listing resources: " + e.getMessage());
+		}
+
+		if (assetList != null)
+		{
+			for ( int i = 0;i<assetList.length;i++)
+			{
+				Log.d(LOGTAG, assetList[i]);
+                if (assetList[i].endsWith(".txt"))
+                    fileList.add(new Item(prefix + assetList[i], R.drawable.folder_icon, true));
+			}
+		}
+	}
+
 	private void loadFileList() {
 		try {
 			path.mkdirs();
@@ -327,9 +360,8 @@ public class FileBrowserActivity extends Activity {
 				Collections.sort(fileList, new ItemFileNameComparator());
 			}
 		} else {
-			Log.e(LOGTAG, "path does not exist or cannot be read");
-		}
-		// Log.d(TAG, "loadFileList finished");
+            Log.e(LOGTAG, "path does not exist or cannot be read");
+        }
 	}// private void loadFileList() {
 
 	private void createFileListAdapter() {

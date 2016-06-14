@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,9 +37,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int ADD_RIGHT_BUTTON_TASK_INTERVAL = 6000;
     private static final int SCROLL_LEFT_BUTTON_TASK_INTERVAL = 125;
     private static final int SCROLL_LEFT_BUTTON_RATE = 8;
+    private static final int FILE_CHOOSER_REQUEST_CODE = 100;
     Intent fileIntent = null;
     private StopWatch watch = null;
     private HashMap<String, String> AQ = new HashMap<String, String>();
+    private HashMap<String, String> QA = new HashMap<String, String>();
     private ArrayList<String> Q = new ArrayList<String>();
     private ArrayList<String> A = new ArrayList<String>();
     private int maxId = 10;
@@ -56,9 +59,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private void clearState(){
         RelativeLayout layout = (RelativeLayout) findViewById(R.id.main);
-        for (int i = 0; i < layout.getChildCount(); ++ i){
-        }
-        System.out.println(upwardsMovingAs.size() + rightSideQs.size());
         layout.removeViews(1, upwardsMovingAs.size() + rightSideQs.size());
         QsTakenByA.clear();
         upwardsMovingAs.clear();
@@ -262,11 +262,27 @@ public class MainActivity extends AppCompatActivity {
         Button chooseButton = (Button)findViewById(R.id.choose);
         chooseButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                int FILE_CHOOSER = 100;
-                startActivityForResult(fileIntent, FILE_CHOOSER);
+                startActivityForResult(fileIntent, FILE_CHOOSER_REQUEST_CODE);
             }
         });
 
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
+            if(resultCode == RESULT_OK) {
+                String fileName = data.getStringExtra(FileBrowserActivity.returnFileParameter);
+                Toast.makeText(
+                        this,
+                        "Received FILE path from file browser:\n"+fileName,
+                        Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(
+                        this,
+                        "Received NO result from file browser",
+                        Toast.LENGTH_LONG).show();
+            }
+        }
     }
     private void start(){
         if (isExternalStorageWritable()) {
@@ -279,12 +295,11 @@ public class MainActivity extends AppCompatActivity {
         populateQandA();
         Point screenDims = getScreenDims();
 
-        textView.setText(textView.getText() + String.format("/ height is %s", screenDims.y));
         this.maxQs = estimateNumberOfSpots();
         fillAnswers((RelativeLayout) findViewById(R.id.main));
 
         // add the first right button pretty soon, but have others add gradually
-        mHandler.postDelayed(addRightButtonTask, 50);
+        mHandler.postDelayed(addRightButtonTask, 150);
         mHandler.postDelayed(scrollLeftButtonTask, SCROLL_LEFT_BUTTON_TASK_INTERVAL);
         mHandler.postDelayed(flattenAllAs, 100);
         watch = new StopWatch((TextView)findViewById(R.id.timer));
@@ -351,6 +366,7 @@ public class MainActivity extends AppCompatActivity {
                 String[] qa = line.split(" ", 2);
                 if (qa.length > 1) {
                     this.AQ.put(qa[1], qa[0]);
+                    this.QA.put(qa[0], qa[1]);
                     Q.add(qa[0]);
                     A.add(qa[1]);
                 }
@@ -386,6 +402,17 @@ public class MainActivity extends AppCompatActivity {
         }
         return lp;
     }
+    OnClickListener clickedQ = new OnClickListener() {
+        public void onClick(View v){
+            TextView QView = ((TextView)v);
+            String answer = QA.get(QView.getText());
+            RelativeLayout layout = (RelativeLayout) findViewById(R.id.main);
+            for (int i=0; i < layout.getChildCount(); ++i){
+            }
+            /*mHandler.postDelayed(new ResetBackgroundColorTo((TextView)v),
+                    WAITING_Q_COLOR);*/
+        }
+    };
     public TextView addAndReturnButton(ViewGroup vg, int width, int newId, int belowId,
                                        String text, boolean addToRight){
         final TextView button = new TextView(this);
@@ -393,6 +420,7 @@ public class MainActivity extends AppCompatActivity {
         if (addToRight){
             lp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
             button.setBackgroundColor(WAITING_Q_COLOR);
+            button.setOnClickListener(clickedQ);
         } else {
             button.setBackgroundColor(CANDIDATE_A_COLOR);
             button.setOnClickListener(new OnClickListener() {
