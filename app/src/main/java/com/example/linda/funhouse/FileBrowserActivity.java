@@ -59,7 +59,7 @@ public class FileBrowserActivity extends Activity {
 	// private Boolean firstLvl = true;
 
 	private static final String LOGTAG = "F_PATH";
-
+    private boolean isAsset = false;
 	private List<Item> fileList = new ArrayList<Item>();
 	private File path = null;
 	private String chosenFile;
@@ -176,6 +176,7 @@ public class FileBrowserActivity extends Activity {
             public void onClick(View v) {
                 Log.d(LOGTAG, "onclick for assetsButton");
                 loadAssetList();
+                isAsset = true;
                 adapter.notifyDataSetChanged();
                 updateCurrentDirectoryTextView();
             }
@@ -254,16 +255,16 @@ public class FileBrowserActivity extends Activity {
 					}// } else {//if(sel.canRead()) {
 				}// if (sel.isDirectory()) {
 					// File picked or an empty directory message clicked
-				else {// if (sel.isDirectory()) {
+				else {
 					Log.d(LOGTAG, "item clicked");
 					if (!directoryShownIsEmpty) {
 						Log.d(LOGTAG, "File selected:" + chosenFile);
-						returnFileFinishActivity(sel.getAbsolutePath());
+						returnFileFinishActivity(isAsset ? "ASSET:" + sel.getName() : sel.getAbsolutePath());
 					}
-				}// else {//if (sel.isDirectory()) {
+				}
 			}// public void onClick(DialogInterface dialog, int which) {
-		});// lView.setOnClickListener(
-	}// private void initializeFileListView() {
+		});
+	}
 
 	private void returnDirectoryFinishActivity() {
 		Intent retIntent = new Intent();

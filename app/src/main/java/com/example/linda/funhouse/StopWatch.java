@@ -28,6 +28,9 @@ public class StopWatch {
         handler.sendMessage(handler.obtainMessage(MSG));
     }
 
+    public void addTime(int milliseconds) {
+        startTime -= milliseconds;
+    }
     public void stop() {
         handler.removeMessages(MSG);
     }
