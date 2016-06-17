@@ -3,7 +3,6 @@ package com.example.linda.funhouse;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -20,8 +19,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> Q = new ArrayList<String>();
     private ArrayList<String> A = new ArrayList<String>();
     private int maxId = 10;
-    private String dataFileName = "lesscommon.txt";    // file with q & a
+    private String dataFileName = "ASSET:lesscommon.txt";    // file with q & a
     protected static final int BUTTON_HEIGHT = 150;
     protected int BUTTON_WIDTH;
     protected HashMap<TextView, TextView> QsTakenByA = new HashMap<>();
@@ -177,16 +178,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == FILE_CHOOSER_REQUEST_CODE && resultCode == RESULT_OK) {
             String fileName = data.getStringExtra(FileBrowserActivity.returnFileParameter);
-
+            String justFile = "";
             if (fileName.matches("^ASSET:.*")) {
-                dataFileName = fileName.split(":")[1];
-                Toast.makeText(
-                        this,
-                        "Restarting with " + dataFileName,
-                        Toast.LENGTH_LONG).show();
-                clearAllState();
-                start();
+                justFile = fileName.split(":")[1];
+            } else {
+                justFile = fileName;
             }
+            Toast.makeText(this, "Restarting with " + justFile,
+                           Toast.LENGTH_LONG).show();
+            clearAllState();
+            start();
         }
     }
     private void start(){
@@ -244,6 +245,10 @@ public class MainActivity extends AppCompatActivity {
     }
     public void fillAnswers(ViewGroup layout){
         int offset = BUTTON_HEIGHT + BUTTON_MARGIN;
+        if (A.size() == 0){
+            ((TextView)findViewById(R.id.hello)).setText("No records found");
+            return;
+        }
         for (int i=0, fromTop = 0; i < maxQs; ++i, fromTop += offset) {
             int newID = incrementAndReturnMaxId();
             String answer = getRandomElementFrom(A);
@@ -265,11 +270,17 @@ public class MainActivity extends AppCompatActivity {
     public void populateQandA(){
         TextView textView = (TextView)findViewById(R.id.hello);
         BufferedReader br = null;
+        Reader reader = null;
         try {
-            br = new BufferedReader(
-                    new InputStreamReader( getAssets().open(dataFileName)));
+            if (dataFileName.matches("^ASSET:.*")) {
+                dataFileName = dataFileName.split(":")[1];
+                reader = new InputStreamReader( getAssets().open(dataFileName));
+            }else{
+                reader = new FileReader(dataFileName);
+            }
+            br = new BufferedReader(reader);
             for(String line; (line = br.readLine()) != null; ){
-                String[] qa = line.split(" ", 2);
+                String[] qa = line.split("=", 2);
                 if (qa.length > 1) {
                     this.AQ.put(qa[1], qa[0]);
                     this.QA.put(qa[0], qa[1]);
@@ -308,29 +319,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return lp;
     }
-    OnClickListener clickedQ = new OnClickListener() {
-        private boolean validHintState(AnswerState aState){
-            return aState.equals(AnswerState.CANDIDATE)
-                    || aState.equals(AnswerState.MATCHED_WRONG)
-                    || aState.equals(AnswerState.SELECTED);
-        }
-        public void onClick(View v){
-            TextView QView = ((TextView)v);
-            String answer = QA.get(QView.getText());
-            RelativeLayout layout = (RelativeLayout) findViewById(R.id.main);
-            for (int i=0; i < layout.getChildCount(); ++i){
-                TextView candidate = (TextView)layout.getChildAt(i);
-                if (candidate.getText().equals(answer) && validHintState(AStates.get(candidate))){
-                    int oldColor = ((ColorDrawable) candidate.getBackground()).getColor();
-                    candidate.setBackgroundColor(HINT_FLASH_A_COLOR);
-                    SetTextViewColorTo resetColor = new SetTextViewColorTo(candidate, oldColor);
-                    mHandler.postDelayed(resetColor, HINT_DURATION);
-                }
-            }
-            // punish HINT_PUNISHMENT_SECONDS for a hint (convert to msecs)
-            watch.addTime(1000 * HINT_PUNISHMENT_SECONDS);
-        }
-    };
     public TextView addAndReturnButton(ViewGroup vg, int width, int newId, int belowId,
                                        String text, boolean addToRight, int fromTop){
         final TextView button = new TextView(this);
@@ -338,7 +326,7 @@ public class MainActivity extends AppCompatActivity {
         if (addToRight){
             lp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
             button.setBackgroundColor(WAITING_Q_COLOR);
-            button.setOnClickListener(clickedQ);
+            button.setOnClickListener(new ClickedQListener(this));
         } else {
             lp.topMargin = fromTop;
             button.setBackgroundColor(CANDIDATE_A_COLOR);
