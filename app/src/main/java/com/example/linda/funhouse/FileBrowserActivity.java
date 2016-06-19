@@ -3,6 +3,7 @@ package com.example.linda.funhouse;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -51,6 +52,8 @@ public class FileBrowserActivity extends Activity {
 	public static final String returnFileParameter = "ua.com.vassiliev.androidfilebrowser.filePathRet";
 	public static final String showCannotReadParameter = "ua.com.vassiliev.androidfilebrowser.showCannotRead";
 	public static final String filterExtension = "ua.com.vassiliev.androidfilebrowser.filterExtension";
+    public static final String PREFS_NAME = "FileBrowserPrefs";
+    SharedPreferences settings = null;
 
 	// Stores names of traversed directories
 	ArrayList<String> pathDirsList = new ArrayList<String>();
@@ -63,6 +66,7 @@ public class FileBrowserActivity extends Activity {
 	private List<Item> fileList = new ArrayList<Item>();
 	private File path = null;
 	private String chosenFile;
+    private static final String LAST_DIRECTORY_KEY = "LAST_DIRECTORY";
 	// private static final int DIALOG_LOAD_FILE = 1000;
 
 	ArrayAdapter<Item> adapter;
@@ -81,29 +85,23 @@ public class FileBrowserActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		// In case of
-		// ua.com.vassiliev.androidfilebrowser.SELECT_DIRECTORY_ACTION
-		// Expects com.mburman.fileexplore.directoryPath parameter to
-		// point to the start folder.
-		// If empty or null, will start from SDcard root.
 		setContentView(R.layout.ua_com_vassiliev_filebrowser_layout);
+        settings = getSharedPreferences(PREFS_NAME, 0);
 
-		// Set action for this activity
+
+        // Set action for this activity
 		Intent thisInt = this.getIntent();
-		currentAction = SELECT_DIRECTORY;// This would be a default action in
-											// case not set by intent
+		currentAction = SELECT_DIRECTORY;
 		if (thisInt.getAction().equalsIgnoreCase(INTENT_ACTION_SELECT_FILE)) {
 			Log.d(LOGTAG, "SELECT ACTION - SELECT FILE");
 			currentAction = SELECT_FILE;
 		}
 
 		showHiddenFilesAndDirs = thisInt.getBooleanExtra(
-				showCannotReadParameter, true);
+				showCannotReadParameter, false);
 
 		filterFileExtension = thisInt.getStringExtra(filterExtension);
-
 		setInitialDirectory();
-
 		parseDirectoryPath();
 		loadFileList();
 		this.createFileListAdapter();
@@ -118,7 +116,7 @@ public class FileBrowserActivity extends Activity {
 		String requestedStartDir = thisInt
 				.getStringExtra(startDirectoryParameter);
 
-		if (requestedStartDir != null && requestedStartDir.length() > 0) {// if(requestedStartDir!=null
+		if (requestedStartDir != null && requestedStartDir.length() > 0) {
 			File tempFile = new File(requestedStartDir);
 			if (tempFile.isDirectory())
 				this.path = tempFile;
@@ -126,14 +124,17 @@ public class FileBrowserActivity extends Activity {
 
 		if (this.path == null) {// No or invalid directory supplied in intent
 								// parameter
-			if (Environment.getExternalStorageDirectory().isDirectory()
+            // since we still need a starting point, if possible, use the last selected directory
+            String last_directory = settings.getString(LAST_DIRECTORY_KEY, "");
+            if (last_directory.length() > 0) {
+                path = new File(last_directory);
+            } else if (Environment.getExternalStorageDirectory().isDirectory()
 					&& Environment.getExternalStorageDirectory().canRead())
 				path = Environment.getExternalStorageDirectory();
 			else
 				path = new File("/");
 		}// if(this.path==null) {//No or invalid directory supplied in intent
-			// parameter
-	}// private void setInitialDirectory() {
+	}
 
 	private void parseDirectoryPath() {
 		pathDirsList.clear();
@@ -171,6 +172,16 @@ public class FileBrowserActivity extends Activity {
 			selectFolderButton.setVisibility(View.GONE);
 		}
 
+        Button filesButton = (Button) this.findViewById(R.id.filesButton);
+        filesButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                Log.d(LOGTAG, "onclick for filesButton");
+                loadFileList();
+                isAsset = false;
+                adapter.notifyDataSetChanged();
+                updateCurrentDirectoryTextView();
+            }
+        });
         Button assetsButton = (Button) this.findViewById(R.id.assetsButton);
         assetsButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
@@ -193,6 +204,10 @@ public class FileBrowserActivity extends Activity {
 	}
 
 	private void updateCurrentDirectoryTextView() {
+        if (isAsset){
+            ((TextView)this.findViewById(R.id.currentDirectoryTextView)).setText("Browsing assets");
+            return;
+        }
 		int i = 0;
 		String curDirString = "";
 		while (i < pathDirsList.size()) {
@@ -269,16 +284,23 @@ public class FileBrowserActivity extends Activity {
 	private void returnDirectoryFinishActivity() {
 		Intent retIntent = new Intent();
 		retIntent.putExtra(returnDirectoryParameter, path.getAbsolutePath());
-		this.setResult(RESULT_OK, retIntent);
+        saveLastDirectorySetting();
+        this.setResult(RESULT_OK, retIntent);
 		this.finish();
 	}// END private void returnDirectoryFinishActivity() {
 
+    private void saveLastDirectorySetting(){
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(this.LAST_DIRECTORY_KEY, path.getAbsolutePath());
+        editor.commit();
+    }
 	private void returnFileFinishActivity(String filePath) {
 		Intent retIntent = new Intent();
 		retIntent.putExtra(returnFileParameter, filePath);
+        saveLastDirectorySetting();
 		this.setResult(RESULT_OK, retIntent);
 		this.finish();
-	}// END private void returnDirectoryFinishActivity() {
+	}
 
 	private void loadAssetList() {
         fileList.clear();
@@ -303,6 +325,7 @@ public class FileBrowserActivity extends Activity {
 	}
 
 	private void loadFileList() {
+        isAsset = false;
 		try {
 			path.mkdirs();
 		} catch (SecurityException e) {

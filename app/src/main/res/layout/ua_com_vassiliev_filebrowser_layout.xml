@@ -45,6 +45,15 @@
                 android:drawableLeft="@drawable/dir_up"
                 android:text="Up" />
             <Button
+                android:id="@+id/filesButton"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:layout_margin="0dp"
+                android:layout_weight="1"
+                android:padding="0dp"
+                android:text="Files" />
+            <Button
                 android:id="@+id/assetsButton"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"

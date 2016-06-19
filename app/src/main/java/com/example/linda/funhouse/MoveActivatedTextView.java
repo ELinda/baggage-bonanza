@@ -15,7 +15,8 @@ public class MoveActivatedTextView implements Runnable {
     }
     public void run() {
         float maxDistance = ma.BUTTON_HEIGHT/2 + ma.BUTTON_MARGIN;
-        float lowestQuestionY = ma.rightSideQs.get(ma.rightSideQs.size()-1).getY();
+        float lowestQuestionY = ma.rightSideQs.size() >= 1 ?
+                                ma.rightSideQs.get(ma.rightSideQs.size()-1).getY() : 0;
         activated.setBackgroundColor(ma.ACTIVATED_A_COLOR);
         // If the activated answer is too low in the screen to match with anything,
         // keep shifting it upwards until it's as high as the lowest box on the right.

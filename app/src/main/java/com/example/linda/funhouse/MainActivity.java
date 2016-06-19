@@ -1,6 +1,7 @@
 package com.example.linda.funhouse;
 
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Bundle;
@@ -49,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> Q = new ArrayList<String>();
     private ArrayList<String> A = new ArrayList<String>();
     private int maxId = 10;
-    private String dataFileName = "ASSET:lesscommon.txt";    // file with q & a
+    private String dataFileName = "ASSET:ru_adverbsnstuff.txt";    // file with q & a
     protected static final int BUTTON_HEIGHT = 150;
     protected int BUTTON_WIDTH;
     protected HashMap<TextView, TextView> QsTakenByA = new HashMap<>();
@@ -102,6 +103,10 @@ public class MainActivity extends AppCompatActivity {
             mHandler.postDelayed(this, ADD_RIGHT_BUTTON_TASK_INTERVAL);
         }
     };
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
     Runnable scrollLeftButtonTask = new Runnable() {
         @Override
         public void run() {
@@ -177,14 +182,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == FILE_CHOOSER_REQUEST_CODE && resultCode == RESULT_OK) {
-            String fileName = data.getStringExtra(FileBrowserActivity.returnFileParameter);
-            String justFile = "";
-            if (fileName.matches("^ASSET:.*")) {
-                justFile = fileName.split(":")[1];
-            } else {
-                justFile = fileName;
-            }
-            Toast.makeText(this, "Restarting with " + justFile,
+            this.dataFileName = data.getStringExtra(FileBrowserActivity.returnFileParameter);
+
+            Toast.makeText(this, "Restarting with " + dataFileName,
                            Toast.LENGTH_LONG).show();
             clearAllState();
             start();
