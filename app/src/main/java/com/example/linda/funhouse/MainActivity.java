@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> Q = new ArrayList<String>();
     private ArrayList<String> A = new ArrayList<String>();
     private int maxId = 10;
-    private String dataFileName = "ASSET:ru_adverbsnstuff.txt";    // file with q & a
+    private String dataFileName = "ASSET:ru_common.txt";    // file with q & a
     protected static final int BUTTON_HEIGHT = 150;
     protected int BUTTON_WIDTH;
     protected HashMap<TextView, TextView> QsTakenByA = new HashMap<>();
@@ -176,6 +176,13 @@ public class MainActivity extends AppCompatActivity {
         chooseButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
                 startActivityForResult(fileIntent, FILE_CHOOSER_REQUEST_CODE);
+            }
+        });
+        Button scoreStatButton = (Button)findViewById(R.id.fastest);
+        scoreStatButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, ScoreStatActivity.class);
+                startActivity(intent);
             }
         });
     }
