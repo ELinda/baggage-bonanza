@@ -1,15 +1,15 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ScoreStatActivity" >
-
     <ListView
         android:id="@+id/scoreListView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true" >
+        android:layout_alignParentTop="true"
+        android:textAlignment="center">
     </ListView>
 
-</RelativeLayout>
+</LinearLayout>

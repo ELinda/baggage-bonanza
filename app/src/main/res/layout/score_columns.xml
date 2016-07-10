@@ -7,6 +7,9 @@
         android:id="@+id/file"
         android:layout_height="wrap_content"
         android:layout_width="0dp"
+        android:textAlignment="textEnd"
+        android:textSize="14dp"
+        android:padding="5dp"
         android:layout_weight="1"
         android:textStyle="bold" />
 
@@ -14,6 +17,9 @@
         android:id="@+id/time"
         android:layout_height="wrap_content"
         android:layout_width="0dp"
+        android:padding="5dp"
+        android:textSize="14dp"
+        android:textAlignment="textStart"
         android:layout_weight="1" />
 
 </LinearLayout>

@@ -42,20 +42,23 @@ public class StopWatch {
 
     private static final int MSG = 1;
 
+    public static String getTimeString(Long elapsedTime){
+        int hours = (int)TimeUnit.MILLISECONDS.toHours(elapsedTime);
+        int mins =  (int)(TimeUnit.MILLISECONDS.toMinutes(elapsedTime)
+                - TimeUnit.HOURS.toMinutes(hours));
+        int secs = (int)(TimeUnit.MILLISECONDS.toSeconds(elapsedTime)
+                - TimeUnit.HOURS.toSeconds(hours)
+                - TimeUnit.MINUTES.toSeconds(mins));
+        String hour_part = hours > 0 ? String.format("%02d:", hours) : "";
+        String minute_part = mins > 0 ? String.format("%02d:", mins) : "";
+        String second_part = String.format("%02d", secs);
+        return hour_part + minute_part + second_part;
+    }
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             long elapsedTime = SystemClock.elapsedRealtime() - startTime;
-            int hours = (int)TimeUnit.MILLISECONDS.toHours(elapsedTime);
-            int mins =  (int)(TimeUnit.MILLISECONDS.toMinutes(elapsedTime)
-                              - TimeUnit.HOURS.toMinutes(hours));
-            int secs = (int)(TimeUnit.MILLISECONDS.toSeconds(elapsedTime)
-                              - TimeUnit.HOURS.toSeconds(hours)
-                              - TimeUnit.MINUTES.toSeconds(mins));
-            String hour_part = hours > 0 ? String.format("%02d:", hours) : "";
-            String minute_part = mins > 0 ? String.format("%02d:", mins) : "";
-            String second_part = String.format("%02d", secs);
-            textView.setText(hour_part + minute_part + second_part);
+            textView.setText(getTimeString(elapsedTime));
             sendMessageDelayed(obtainMessage(MSG), UPDATE_INTERVAL);
         }
     };

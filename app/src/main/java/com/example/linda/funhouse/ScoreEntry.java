@@ -5,9 +5,9 @@ package com.example.linda.funhouse;
  */
 public class ScoreEntry {
     public String file;
-    public String time;
+    public Long time;
 
-    public ScoreEntry(String name, String hometown) {
+    public ScoreEntry(String file, Long time) {
         this.file = file;
         this.time = time;
     }
