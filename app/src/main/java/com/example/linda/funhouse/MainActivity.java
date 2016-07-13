@@ -32,10 +32,10 @@ public class MainActivity extends AppCompatActivity {
     public static final int ACTIVATED_A_COLOR = Color.parseColor("#4499CC");
     public static final int HINT_FLASH_A_COLOR = Color.parseColor("#5599EE");
     public static final int WAITING_Q_COLOR = Color.parseColor("#ff2277");
+    public static final int TEXT_COLOR = Color.parseColor("#FFFFFF");
     public static final int CANDIDATE_A_COLOR = Color.parseColor("#2277AA");
     public static final int RIGHT_MATCH_COLOR = Color.parseColor("#00AA44");
     public static final int WRONG_MATCH_COLOR = Color.parseColor("#AA4400");
-    public static final int TEXT_COLOR = Color.parseColor("#FFFFFF");
     public static final int HINT_PUNISHMENT_SECONDS = 10;
     protected static final int BUTTON_MARGIN = 10;
     protected static final int ADD_RIGHT_BUTTON_TASK_INTERVAL = 6000;
@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> Q = new ArrayList<String>();
     private ArrayList<String> A = new ArrayList<String>();
     private int maxId = 10;
-    private String dataFileName = "ASSET:ru_common.txt";    // file with q & a
+    protected String dataFileName = "ASSET:ru_common.txt";    // file with q & a
     protected static final int BUTTON_HEIGHT = 150;
     protected int BUTTON_WIDTH;
     protected HashMap<TextView, TextView> QsTakenByA = new HashMap<>();
@@ -268,7 +268,8 @@ public class MainActivity extends AppCompatActivity {
     }
     public int estimateNumberOfSpots(){
         int buttonSpace = MainActivity.BUTTON_HEIGHT + 2 * MainActivity.BUTTON_MARGIN;
-        return (int)((getScreenDims().y - 300)/ buttonSpace);
+        return 3;
+        //return (int)((getScreenDims().y - 200)/ buttonSpace);
     }
     public int incrementAndReturnMaxId(){
         maxId += 1;

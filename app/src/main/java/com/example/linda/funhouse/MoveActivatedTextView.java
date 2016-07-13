@@ -89,6 +89,7 @@ public class MoveActivatedTextView implements Runnable {
             ma.watch.stop();
             hello.setText(String.format("You have won in %s seconds!!!!11",
                     ma.watch.getTimeElapsedSeconds()));
+            ma.mHandler.postDelayed(new ShowNameInputDialogue(ma), 10);
         }else{
             for (TextView q : wrongQs){
                 ma.QsTakenByA.remove(q);

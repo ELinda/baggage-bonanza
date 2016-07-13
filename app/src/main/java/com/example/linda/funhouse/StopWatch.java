@@ -19,9 +19,9 @@ public class StopWatch {
         this.textView = textView;
     }
 
-    public int getTimeElapsedSeconds(){
+    public long getTimeElapsedSeconds(){
         long elapsedTime = SystemClock.elapsedRealtime() - startTime;
-        return (int) TimeUnit.MILLISECONDS.toSeconds(elapsedTime);
+        return TimeUnit.MILLISECONDS.toSeconds(elapsedTime);
     }
     public void start() {
         startTime = SystemClock.elapsedRealtime();
